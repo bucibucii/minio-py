@@ -49,7 +49,8 @@ from .helpers import (MAX_MULTIPART_COUNT, MAX_MULTIPART_OBJECT_SIZE,
                       ThreadPool, check_bucket_name, check_non_empty_string,
                       check_sse, check_ssec, genheaders, get_part_info,
                       headers_to_strings, is_valid_policy_type, makedirs,
-                      md5sum_hash, read_part_data, sha256_hash)
+                      md5sum_hash, read_part_data, sha256_hash,
+                      throttle_bandwidth)
 from .legalhold import LegalHold
 from .lifecycleconfig import LifecycleConfig
 from .notificationconfig import NotificationConfig
@@ -266,7 +267,7 @@ class Minio:  # pylint: disable=too-many-public-methods
         response = self._http.urlopen(
             method,
             urlunsplit(url),
-            body=body,
+            body=throttle_bandwidth(data=body,method=method),
             headers=http_headers,
             preload_content=preload_content,
         )
