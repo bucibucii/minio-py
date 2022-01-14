@@ -24,6 +24,7 @@ import hashlib
 import math
 import os
 import re
+import time
 import urllib.parse
 from queue import Queue
 from threading import BoundedSemaphore, Thread
@@ -710,3 +711,21 @@ class ThreadPool:
         if not self._exceptions_queue.empty():
             raise self._exceptions_queue.get()
         return self._results_queue
+
+def throttle_bandwidth(data, method):
+    """"method used to limit upload/download rate"""
+    chunk_size = 0
+    if method == "PUT":
+        chunk_size = int(os.environ.get('MINIO_UPLOAD_RATE_LIMIT',0))
+    if method == "GET":
+        chunk_size = int(os.environ.get('MINIO_DOWNLOAD_RATE_LIMIT',0))
+    if data is None or chunk_size == 0:
+        yield data
+        return
+    sent_chunk_length = 0
+    for i in range(int(len(data) / chunk_size)):
+        time.sleep(1)
+        sent_chunk = data[i * chunk_size : i * chunk_size + chunk_size]
+        sent_chunk_length = sent_chunk_length + len(sent_chunk)
+        yield sent_chunk
+    yield data[sent_chunk_length:]
